@@ -42,14 +42,11 @@ class _TodoListState extends State<TodoList> {
               elevation: 2.0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: getColor(todos[index].priority ?? 1),
-                  child: Text(
-                    todos[index].id.toString(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  backgroundColor: getColor(todos[index].priority ?? 3),
                 ),
                 title: Text(todos[index].title ?? ''),
                 subtitle: Text(todos[index].description ?? ''),
+                trailing: Text(todos[index].date ?? ''),
                 onTap: () {
                   navigateToDetails(todos[index]);
                 },

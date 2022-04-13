@@ -42,6 +42,11 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>Need to take Picture from Gallery</string>
+	<key>NSCameraUsageDescription</key>
+    <string>Need to take Picture using Camera</string>
 	<false/>
+
 </dict>
 </plist>

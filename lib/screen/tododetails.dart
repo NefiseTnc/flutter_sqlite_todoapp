@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_sqlite_todoapp/model/todo.dart';
 import 'package:flutter_sqlite_todoapp/utils/dbhelper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 const List<String> choices = <String>[menuSave, menuDelete, menuBack];
@@ -33,22 +36,46 @@ class _TodoDetailsState extends State<TodoDetails> {
   TextEditingController titleController = TextEditingController();
   TextEditingController descController = TextEditingController();
 
+  File? _image;
+  final picker = ImagePicker();
+
+  Future<void> getImage(ImageSource imageSource) async {
+    final image = await ImagePicker().pickImage(source: imageSource);
+    if (image == null) return;
+    final imageTemporary = File(image.path);
+    setState(() {
+      _image = imageTemporary;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     titleController.text = todo.title ?? '';
     descController.text = todo.description ?? '';
+    _image = todo.imageUrl != null ? File(todo.imageUrl!) : null;
   }
 
   @override
   Widget build(BuildContext context) {
     var textStyle = Theme.of(context).textTheme.caption;
-    var title = todo.title == '' ? "New Todo" : todo.title;
+    var title = todo.title == '' ? "New Todo" : "Update Todo";
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(title ?? ''),
+        title: Text(title),
         actions: [
+          ElevatedButton(
+              onPressed: () async {
+                await getImage(ImageSource.camera);
+              },
+              child: const Icon(Icons.photo_camera)),
+          ElevatedButton(
+            onPressed: () async {
+              await getImage(ImageSource.gallery);
+            },
+            child: const Icon(Icons.photo_album),
+          ),
           PopupMenuButton<String>(
               onSelected: select,
               itemBuilder: ((context) {
@@ -60,48 +87,104 @@ class _TodoDetailsState extends State<TodoDetails> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(5.0),
-        child: Column(
-          children: [
-            Padding(
-              padding:
-                  EdgeInsets.only(top: _formDistance, bottom: _formDistance),
-              child: TextField(
-                controller: titleController,
-                keyboardType: TextInputType.text,
-                decoration: InputDecoration(
-                  label: const Text("Title"),
-                  labelStyle: textStyle,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0)),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Padding(
+                padding:
+                    EdgeInsets.only(top: _formDistance, bottom: _formDistance),
+                child: TextField(
+                  controller: titleController,
+                  keyboardType: TextInputType.text,
+                  decoration: InputDecoration(
+                    label: const Text("Title"),
+                    labelStyle: textStyle,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5.0)),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding:
-                  EdgeInsets.only(top: _formDistance, bottom: _formDistance),
-              child: TextField(
-                controller: descController,
-                keyboardType: TextInputType.text,
-                decoration: InputDecoration(
-                  label: const Text("Description"),
-                  labelStyle: textStyle,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0)),
+              Row(
+                children: [
+                  const Text('Priorities : '),
+                  Expanded(
+                    child: DropdownButton(
+                        value: _priorities[(todo.priority ?? 2) - 1],
+                        items: _priorities.map((String str) {
+                          return DropdownMenuItem<String>(
+                            value: str,
+                            child: Text(str),
+                          );
+                        }).toList(),
+                        onChanged: (str) {
+                          updatePriority(str.toString());
+                        }),
+                  ),
+                ],
+              ),
+              if (_image != null)
+                Container(
+                  padding: const EdgeInsets.all(10.0),
+                  width: MediaQuery.of(context).size.width,
+                  height: 250.0,
+                  child: Stack(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20.0),
+                          image: DecorationImage(
+                            image: FileImage(_image!),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Container(
+                            height: 30.0,
+                            width: 30.0,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                setState(
+                                  () {
+                                    _image = null;
+                                  },
+                                );
+                              },
+                              child: const Icon(
+                                Icons.delete,
+                                size: 16.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              Padding(
+                padding:
+                    EdgeInsets.only(top: _formDistance, bottom: _formDistance),
+                child: TextField(
+                  keyboardType: TextInputType.multiline,
+                  maxLines: null,
+                  controller: descController,
+                  decoration: InputDecoration(
+                    label: const Text("Description"),
+                    labelStyle: textStyle,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5.0)),
+                  ),
                 ),
               ),
-            ),
-            DropdownButton(
-                value: _priorities[(todo.priority ?? 2) - 1],
-                items: _priorities.map((String str) {
-                  return DropdownMenuItem<String>(
-                    value: str,
-                    child: Text(str),
-                  );
-                }).toList(),
-                onChanged: (str) {
-                  updatePriority(str.toString());
-                }),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -145,7 +228,9 @@ class _TodoDetailsState extends State<TodoDetails> {
   void save() {
     todo.title = titleController.text;
     todo.description = descController.text;
-    todo.date = DateFormat.yMd().format(DateTime.now());
+    todo.imageUrl = _image != null ? _image!.path : '';
+    //todo.date = DateFormat.yMd().format(DateTime.now());
+    todo.date = DateFormat.MMMd().format(DateTime.now());
     if (todo.id != null) {
       helper.updateTodo(todo);
     } else {

@@ -9,6 +9,7 @@ class DbHelper {
   String colDescription = "description";
   String colPriority = "priority";
   String colDate = "date";
+  String colImageUrl = "imageUrl";
 
   static final DbHelper instance = DbHelper._init();
   DbHelper._init();
@@ -32,7 +33,7 @@ class DbHelper {
   void _createDb(Database db, int newVersion) async {
     await db.execute(
         "CREATE TABLE $tblTodo($colId INTEGER PRIMARY KEY AUTOINCREMENT, $colTitle TEXT,"
-        "$colDescription TEXT, $colPriority INTEGER, $colDate TEXT"
+        "$colDescription TEXT, $colPriority INTEGER, $colDate TEXT , $colImageUrl TEXT"
         ")");
   }
 
