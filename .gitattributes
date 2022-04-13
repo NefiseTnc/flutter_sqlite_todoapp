@@ -1,1 +1,2 @@
-*.inl linguist-detectable=false
+# Direct Dart
+*.* linguist-language=Dart
